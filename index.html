@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Owner Dashboard - GoLaundry</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        :root { --primary: #0ea5e9; --bg: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        
+        .page { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .top-bar { background: white; padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .card { background: white; padding: 18px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        
+        .balance-card { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; padding: 25px; border-radius: 24px; margin-bottom: 25px; }
+        .status-badge { font-size: 10px; padding: 4px 10px; border-radius: 8px; font-weight: 800; text-transform: uppercase; }
+        
+        .btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: white; border: 1px solid #e2e8f0; color: #64748b; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 24px; width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>
+            <h2 id="laundryNameHeader" style="margin:0; font-size:18px;">Memuat...</h2>
+            <small id="laundryAddress" style="color:#64748b;">Lokasi Toko</small>
+        </div>
+        <div style="width:40px; height:40px; background:#f0f9ff; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+            <i data-lucide="store" style="color:#0ea5e9; width:20px;"></i>
+        </div>
+    </div>
+
+    <main id="page-dashboard" class="page active">
+        <div class="balance-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <p style="margin:0; font-size:12px; opacity:0.8;">Saldo Toko</p>
+                    <h1 id="ownerBalance" style="margin:5px 0 15px; font-size:32px; font-weight:800;">Rp 0</h1>
+                </div>
+                <button onclick="openModal('modalService')" style="background:rgba(255,255,255,0.2); border:none; padding:8px 12px; border-radius:10px; color:white; font-size:11px; font-weight:700;">+ Layanan</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="requestTopup()" style="flex:1; background:white; color:#0ea5e9; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:12px;">Top Up</button>
+                <button onclick="requestWithdraw()" style="flex:1; background:rgba(255,255,255,0.2); color:white; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:12px;">Tarik Tunai</button>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="margin:0;">Antrian Cucian</h3>
+            <span id="orderCount" style="background:#0ea5e9; color:white; padding:2px 8px; border-radius:20px; font-size:10px;">0</span>
+        </div>
+        <div id="orderList"></div>
+    </main>
+
+    <main id="page-history" class="page">
+        <h3>Riwayat Selesai</h3>
+        <div id="historyList"></div>
+    </main>
+
+    <main id="page-settings" class="page">
+        <h3>Pengaturan Toko</h3>
+        <div class="card">
+            <label style="font-size:12px; color:#64748b; font-weight:700;">Daftar Layanan Anda:</label>
+            <div id="serviceList" style="margin-top:10px;"></div>
+        </div>
+        <button onclick="logout()" class="btn-action" style="color:#ef4444; background:#fff1f2; margin-top:20px;">
+            <i data-lucide="log-out"></i> Keluar Akun
+        </button>
+    </main>
+
+    <div id="modalService" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Tambah Layanan</h3>
+            <form id="formService">
+                <input type="text" id="sName" placeholder="Contoh: Cuci Lipat 2 Hari" class="btn-action btn-outline" style="margin-bottom:10px; text-align:left;" required>
+                <input type="number" id="sPrice" placeholder="Harga per Kg (Rp)" class="btn-action btn-outline" style="margin-bottom:20px; text-align:left;" required>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" onclick="closeModal('modalService')" style="flex:1;" class="btn-action btn-outline">Batal</button>
+                    <button type="submit" style="flex:2;" class="btn-action btn-primary">Simpan Layanan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('dashboard', this)"><i data-lucide="layout-dashboard"></i><span>Order</span></div>
+        <div class="nav-item" onclick="switchPage('history', this)"><i data-lucide="history"></i><span>Riwayat</span></div>
+        <div class="nav-item" onclick="switchPage('settings', this)"><i data-lucide="settings"></i><span>Toko</span></div>
+    </nav>
+
+    <script type="module" src="../js/script.js"></script>
+    <script>
+        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.switchPage = (pageId, el) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            el.classList.add('active');
+            if (window.lucide) lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
