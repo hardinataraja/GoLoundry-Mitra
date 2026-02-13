@@ -20,7 +20,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const COLLECTION = "laundries";
-const TARGET_PAGE = "../owner/index.html";
+const TARGET_PAGE = "index.html";
 
 
 // ===== LOGIN OWNER =====
